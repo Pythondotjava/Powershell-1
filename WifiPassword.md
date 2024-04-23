@@ -5,20 +5,21 @@ This PowerShell script prompts the user to input the name of a WiFi profile and 
 
 ### Usage
 1. Run the script in PowerShell.
-2. Enter the name of the WiFi profile when prompted.
-3. The script will display the password if it's stored for the specified profile.
+2. The script will display the all saved password if it's stored for the specified profile.
 
 ### Script
 ```powershell
-# Prompt user to input WiFi profile name
-$profileName = Read-Host -Prompt "Enter the name of the WiFi profile"
+# Get list of all WiFi profiles
+$profiles = netsh wlan show profiles | Select-String -Pattern "All User Profile" | ForEach-Object { $_.ToString().Split(":")[1].Trim() }
 
-# Get WiFi password
-$wifiPassword = netsh wlan show profile name="$profileName" key=clear | Select-String -Pattern "Key Content" | ForEach-Object { $_.ToString().Split(":")[1].Trim() }
-
-# Check if password is found
-if ($wifiPassword -ne $null) {
-    Write-Output "Password for WiFi Profile '$profileName': $wifiPassword"
-} else {
-    Write-Output "WiFi Profile '$profileName' not found or password not stored."
+# Iterate through each profile and retrieve password
+foreach ($profile in $profiles) {
+    $wifiPassword = netsh wlan show profile name="$profile" key=clear | Select-String -Pattern "Key Content" | ForEach-Object { $_.ToString().Split(":")[1].Trim() }
+    
+    if ($wifiPassword -ne $null) {
+        Write-Output "Password for WiFi Profile '$profile': $wifiPassword"
+    } else {
+        Write-Output "WiFi Profile '$profile' password not found or not stored."
+    }
 }
+
